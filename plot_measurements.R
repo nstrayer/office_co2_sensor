@@ -73,7 +73,7 @@ air_quality %>%
   facet_grid(rows = "measure", scales = "free", switch = "y") +
   labs(title = plot_title, y = "") +
   scale_color_manual(values = c(CO2 = green, Temp = blue, Humidity = orange)) +
-  scale_x_datetime(date_labels = "%I:%M") +
+  scale_x_datetime(date_labels = "%I:%M%p") +
   scale_y_continuous(position = "right", expand = expansion(mult = 0.1, add = 0)) +
   theme(
     legend.position = "none",
