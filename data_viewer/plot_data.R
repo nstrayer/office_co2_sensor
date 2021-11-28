@@ -1,9 +1,6 @@
-library(readr)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-library(lubridate)
-library(httr)
 
 pretty_time <- function(time_obj) {
   gsub(
@@ -14,53 +11,31 @@ pretty_time <- function(time_obj) {
   )
 }
 
+green <- "#106850"
+blue <- "#3d89a7"
+red <- "#d84b22"
+light_grey <- "#e6e5e6"
+
+measure_units <- c(
+  CO2 = "ppm",
+  Temp = "°F",
+  Humidity = "%"
+)
 
 plot_air_data <- function(air_quality_wide, room_name, trim_amount = 1){
   
-  green <- "#106850"
-  blue <- "#3d89a7"
-  red <- "#d84b22"
-  light_grey <- "#e6e5e6"
-  
-  measure_colors <- c(
-    CO2 = green,
-    Temp = red,
-    Humidity = blue
-  )
-  
-  measure_units <- c(
-    CO2 = "ppm",
-    Temp = "°F",
-    Humidity = "%"
-  )
-  
   air_quality <- air_quality_wide %>%
-    pivot_longer(cols = c(CO2, Temp, Humidity)) %>%
+    pivot_longer(cols = c(CO2, Temp, Humidity))
+  
+  extremes <- air_quality %>% 
+    group_by(name) %>% 
+    slice(c(which.min(value), which.max(value))) %>% 
     mutate(
-      measure = paste0(name, " (", measure_units[name], ")"),
+      label_pos = value + c(-1, 1)*(last(value) - first(value))*0.22
     )
   
-  extremes <- air_quality %>%
-    group_by(name, measure) %>%
-    summarise(
-      min_value = min(value),
-      max_value = max(value),
-      min_time = Time[which(value == min_value)[[1]]],
-      max_time = Time[which(value == max_value)[[1]]],
-      .groups = "drop"
-    ) %>%
-    mutate(
-      range = max_value - min_value,
-      nudge_amnt = range * 0.22,
-      min_y = min_value - nudge_amnt,
-      max_y = max_value + nudge_amnt
-    ) %>%
-    select(-range, -nudge_amnt)
-  
-  extremes <- bind_rows(
-    extremes %>% rename(value = min_value, time = min_time, y = min_y),
-    extremes %>% rename(value = max_value, time = max_time, y = max_y)
-  )
+  name_to_measure <- paste0(names(measure_units), " (", measure_units, ")")
+  names(name_to_measure) <- names(measure_units)
   
   plot_title <- paste(
     "Air measurements for", room_name, "from",
@@ -74,10 +49,10 @@ plot_air_data <- function(air_quality_wide, room_name, trim_amount = 1){
     geom_segment(
       data = extremes,
       aes(
-        x = time,
-        xend = time,
+        x = Time,
+        xend = Time,
         y = value,
-        yend = y
+        yend = label_pos
       ),
       alpha = 0.5,
       size = 0.25
@@ -85,17 +60,18 @@ plot_air_data <- function(air_quality_wide, room_name, trim_amount = 1){
     geom_label(
       data = extremes,
       aes(
-        x = time,
-        y = y,
+        x = Time,
+        y = label_pos,
         label = paste0(round(value, 2), measure_units[name])
       ),
       size = 3
     ) +
     geom_line(aes(color = name)) +
     facet_grid(
-      rows = "measure",
+      rows = "name",
       scales = "free",
-      switch = "y"
+      switch = "y",
+      labeller = labeller(name = name_to_measure)
     ) +
     labs(
       title = paste("Air measurements for", room_name),
@@ -107,7 +83,12 @@ plot_air_data <- function(air_quality_wide, room_name, trim_amount = 1){
       ),
       y = ""
     ) +
-    scale_color_manual(values = measure_colors) +
+    scale_color_manual(values = c(
+        CO2 = green,
+        Temp = red,
+        Humidity = blue
+      )
+    ) +
     scale_x_datetime(date_labels = "%I:%M%p", expand = expansion(mult = 0.06, add = 0)) +
     scale_y_continuous(position = "right", expand = expansion(mult = 0.1, add = 0)) +
     theme(

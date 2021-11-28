@@ -1,4 +1,7 @@
 library(shiny)
+library(httr)
+library(jsonlite)
+
 source("plot_data.R")
 
 ui <- fluidPage(
@@ -35,7 +38,7 @@ server <- function(input, output) {
       ) %>% 
       rename(
         Time = time, CO2 = co2,Temp = temp, Humidity =  humidity
-      )
+      ) 
   }) 
   
   output$allData <- DT::renderDataTable({
