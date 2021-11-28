@@ -1,0 +1,37 @@
+library(plumber)
+
+
+#* Echo back the input
+#* @param msg The message to echo
+#* @get /echo
+function(msg="") {
+	list(msg = paste0("The message is: '", msg, "'"))
+}
+
+#* Add reading to db
+#* @param time time of reading
+#* @param co2 co2 in parts per million 
+#* @param temp temperature in degrees C
+#* @param humidity relative humidity in percent
+#* @post /record
+function(req, res, time, co2, temp, humidity) {
+ dbWriteTable(con, "air_quality",  
+  data.frame(
+    time = as.POSIXlt(time, format = "%m/%d/%y %H:%M:%S"),
+    co2 = co2, 
+    temp = temp, 
+    humidity = humidity),
+  append = TRUE)
+  return("thanks")
+}
+
+#* Set a value
+#* @param key Key
+#* @param value Value
+#* @post /set
+function(req, res, key, value) {
+  result <- NULL
+  print(value)
+
+  result
+}
