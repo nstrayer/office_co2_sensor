@@ -1,6 +1,4 @@
 library(shiny)
-# library(httr)
-# library(jsonlite)
 library(DBI)
 
 con <- dbConnect(RSQLite::SQLite(), "../database/air_quality.db")
@@ -16,8 +14,6 @@ ui <- fluidPage(
     sidebarPanel(
       actionButton("refresh", "Pull data again")
     ),
-    
-    # Show a plot of the generated distribution
     mainPanel(
       plotOutput("historyPlot"),
       DT::dataTableOutput("allData")
@@ -30,11 +26,7 @@ server <- function(input, output) {
   air_data <- reactive({
     nobs <- 4000
     input$refresh
-    # r <- GET("http://10.0.0.137:8000/dumpdata") %>% 
-    #   content("text", encoding = "UTF-8")
-    # 
     print("Got data from server/database")
-    
     dbGetQuery(con, paste("SELECT * FROM air_quality ORDER BY time DESC LIMIT", nobs))%>% 
       as_tibble() %>% 
       mutate(
