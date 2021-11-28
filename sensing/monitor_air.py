@@ -10,10 +10,10 @@ from datetime import datetime
 
 i2c = board.I2C()
 scd4x = adafruit_scd4x.SCD4X(i2c)
-print("Serial number:", [hex(i) for i in scd4x.serial_number])
+print("Starting up air-quality sensor...")
 
 scd4x.start_periodic_measurement()
-print("Waiting for first measurement....")
+print("Waiting for first measurement...")
 
 while True:
     if scd4x.data_ready:
@@ -21,6 +21,11 @@ while True:
         co2 = scd4x.CO2
         temp = round(scd4x.temperature, 3)
         humidity = round(scd4x.relative_humidity, 3)
+        print(now)
+        print("CO2: %d ppm" % scd4x.CO2)
+        print("Temperature: %0.1f *C" % scd4x.temperature)
+        print("Humidity: %0.1f %%" % scd4x.relative_humidity)
+        print()
         with open("air_quality.csv", "a") as f:
             f.write(f"{now},{co2},{temp},{humidity}\n")
         try:
@@ -28,9 +33,4 @@ while True:
                               data={'time': now, 'co2': co2, 'temp': temp, 'humidity': humidity})
         except:
             print("Failed to send to database")
-        print(now)
-        print("CO2: %d ppm" % scd4x.CO2)
-        print("Temperature: %0.1f *C" % scd4x.temperature)
-        print("Humidity: %0.1f %%" % scd4x.relative_humidity)
-        print()
     time.sleep(1)
