@@ -1,4 +1,7 @@
 library(plumber)
+library(DBI)
+
+con <- dbConnect(RSQLite::SQLite(), "air_quality.db")
 
 
 #* Echo back the input
