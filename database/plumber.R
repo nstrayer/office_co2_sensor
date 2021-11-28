@@ -30,7 +30,7 @@ function(req, res, time, co2, temp, humidity) {
 #* Get dump of latest observations from database
 #* @get /dumpdata
 function(nobs = 1000) {
-  res <- dbGetQuery(con, paste("SELECT * FROM air_quality DESC LIMIT", nobs))
+  res <- dbGetQuery(con, paste("SELECT * FROM air_quality ORDER BY time DESC LIMIT", nobs))
   
   list(res = res)
 }
