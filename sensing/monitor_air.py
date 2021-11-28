@@ -19,12 +19,13 @@ while True:
     if scd4x.data_ready:
         now = datetime.now().strftime("%m/%d/%y %H:%M:%S")
         co2 = scd4x.CO2
-        temp = round(scd4x.temperature,3)
-        humidity = round(scd4x.relative_humidity,3)
+        temp = round(scd4x.temperature, 3)
+        humidity = round(scd4x.relative_humidity, 3)
         with open("air_quality.csv", "a") as f:
             f.write(f"{now},{co2},{temp},{humidity}\n")
         try:
-            r = requests.post('http://10.0.0.137:8000/record', data={'time': now, 'co2':co2, 'temp':temp, 'humidity':humidity})
+            r = requests.post('http://10.0.0.137:8000/record',
+                              data={'time': now, 'co2': co2, 'temp': temp, 'humidity': humidity})
         except:
             print("Failed to send to database")
         print(now)
