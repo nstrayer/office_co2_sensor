@@ -1,6 +1,9 @@
 library(shiny)
-library(httr)
-library(jsonlite)
+# library(httr)
+# library(jsonlite)
+library(DBI)
+
+con <- dbConnect(RSQLite::SQLite(), "../database/air_quality.db")
 
 source("plot_data.R")
 
@@ -25,12 +28,14 @@ ui <- fluidPage(
 server <- function(input, output) {
   
   air_data <- reactive({
+    nobs <- 4000
     input$refresh
-    r <- GET("http://10.0.0.137:8000/dumpdata") %>% 
-      content("text", encoding = "UTF-8")
-    
+    # r <- GET("http://10.0.0.137:8000/dumpdata") %>% 
+    #   content("text", encoding = "UTF-8")
+    # 
     print("Got data from server/database")
-    do.call(rbind, lapply(jsonlite::parse_json(r)$res, data.frame)) %>% 
+    
+    dbGetQuery(con, paste("SELECT * FROM air_quality ORDER BY time DESC LIMIT", nobs))%>% 
       as_tibble() %>% 
       mutate(
         time = as.POSIXct(time, origin="1970-01-01"),
