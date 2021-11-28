@@ -3,7 +3,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(lubridate)
-
+library(httr)
 
 pretty_time <- function(time_obj) {
   gsub(
@@ -14,7 +14,8 @@ pretty_time <- function(time_obj) {
   )
 }
 
-plot_air_data <- function(room_name, data_file, trim_amount){
+
+plot_air_data <- function(air_quality_wide, room_name, trim_amount = 1){
   
   green <- "#106850"
   blue <- "#3d89a7"
@@ -33,15 +34,9 @@ plot_air_data <- function(room_name, data_file, trim_amount){
     Humidity = "%"
   )
   
-  air_quality <-
-    read_csv(data_file,
-             col_names = c("Time", "CO2", "Temp", "Humidity")
-    ) %>%
-    tail(-trim_amount) %>%
-    mutate(Time = lubridate::mdy_hms(Time, tz = "GMT") %>% with_tz("EST")) %>%
+  air_quality <- air_quality_wide %>%
     pivot_longer(cols = c(CO2, Temp, Humidity)) %>%
     mutate(
-      value = ifelse(name == "Temp", (value * 9 / 5) + 32, value),
       measure = paste0(name, " (", measure_units[name], ")"),
     )
   
@@ -127,6 +122,3 @@ plot_air_data <- function(room_name, data_file, trim_amount){
     )
 }
 
-
-plot_air_data("living room", data_file = "living_room_air_quality.csv", trim_amount = 40)
-plot_air_data("bedroom", data_file = "air_quality.csv", trim_amount = 1)
