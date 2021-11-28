@@ -4,11 +4,10 @@ library(DBI)
 con <- dbConnect(RSQLite::SQLite(), "air_quality.db")
 
 
-#* Echo back the input
-#* @param msg The message to echo
+#* Echo message to check for working server
 #* @get /echo
-function(msg="") {
-	list(msg = paste0("The message is: '", msg, "'"))
+function() {
+	list(msg = "Connection is working")
 }
 
 #* Add reading to db
