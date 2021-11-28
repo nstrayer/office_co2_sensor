@@ -28,7 +28,7 @@ function(req, res, time, co2, temp, humidity) {
 }
 
 #* Get observations from database
-#* @get /echo
+#* @get /dumpdata
 function(nobs = 1000) {
   res <- dbGetQuery(con, paste("SELECT * FROM air_quality LIMIT", nobs))
   
