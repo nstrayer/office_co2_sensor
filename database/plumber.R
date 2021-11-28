@@ -27,13 +27,10 @@ function(req, res, time, co2, temp, humidity) {
   return("thanks")
 }
 
-#* Set a value
-#* @param key Key
-#* @param value Value
-#* @post /set
-function(req, res, key, value) {
-  result <- NULL
-  print(value)
-
-  result
+#* Get observations from database
+#* @get /echo
+function(nobs = 1000) {
+  res <- dbGetQuery(con, paste("SELECT * FROM air_quality LIMIT", nobs))
+  
+  list(res = res)
 }
