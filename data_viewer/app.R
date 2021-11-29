@@ -44,7 +44,7 @@ server <- function(input, output) {
     
     air_data %>% 
       mutate(
-        time = as.POSIXct(time, origin="1970-01-01"),
+        time = as.POSIXct(time, origin="1970-01-01", tz="EST"),
         temp = (temp * 9 / 5) + 32
       ) %>% 
       rename(
