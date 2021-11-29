@@ -2,6 +2,18 @@
 
 _Run on a Raspberry Pi 4 with port 8000 exposed to local network_
 
+## Start up Plumber api to listen to incoming sensor data
+
+_This needs to be run interactively for some reason, so ignore startServer.R for now._
+
+```bash
+R
+```
+```R
+api <- plumber::pr("plumber.R")
+plumber::pr_run(api, host = "0.0.0.0", port = 8000)
+```
+
 ## Get a dump of data from database
 
 ```bash
