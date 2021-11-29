@@ -11,7 +11,11 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       actionButton("refresh", "Pull data again"),
-      sliderInput("nHours", "Number of hours to pull", min = 1, max = 24, value = 12, step = 1)
+      hr(),
+      sliderInput("nHours", "Number of hours to pull", min = 1, max = 24, value = 12, step = 1),
+      hr(),
+      p("Warning, using all data may crash app.", style="color:orangered"),
+      checkboxInput("useAllData", "Use all data", FALSE),
     ),
     mainPanel(
       plotOutput("historyPlot", height = "500px"),
@@ -23,13 +27,22 @@ ui <- fluidPage(
 server <- function(input, output) {
   
   air_data <- reactive({
+    print("Grabbing data from database")
     input$refresh
     
     start_time <- as.integer(Sys.time() - as.difftime(input$nHours, unit="hours"))
-    print("Got data from server/database")
-    air_data <- airquality_db %>% 
-      filter(time > start_time) %>% 
-      collect() %>% 
+    air_data <- airquality_db %>% filter(time > start_time)
+    
+    if (input$useAllData){
+      # Remove filter if user requests everything
+      air_data <- airquality_db
+    }
+    
+    air_data <- air_data %>% collect() 
+    
+    if(nrow(air_data) == 0) stop("No observations in time range. Try all-data option.")
+    
+    air_data %>% 
       mutate(
         time = as.POSIXct(time, origin="1970-01-01"),
         temp = (temp * 9 / 5) + 32
