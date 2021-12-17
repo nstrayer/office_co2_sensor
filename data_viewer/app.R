@@ -5,6 +5,27 @@ source("plot_data.R")
 
 
 ui <- fluidPage(
+  tags$head(
+    # Note the wrapping of the string in HTML()
+    tags$style(HTML("
+      @import url('https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap');
+      h2 {
+        font-family: 'Yusei Magic', sans-serif;
+      }
+      .avg-val-cards {
+        display: flex;
+        gap: 1rem;
+        justify-content: space-around;
+        padding: 0.5rem;
+      }
+      .avg-val-cards > div {
+        border: 1px solid grey;
+        padding: 1rem;
+        border-radius: 5px;
+        font-size: large;
+      }
+   "))
+  ),
   titlePanel("Air Quality Data from W Madison"),
   sidebarLayout(
     sidebarPanel(
@@ -17,12 +38,14 @@ ui <- fluidPage(
     ),
     mainPanel(
       div("Average values from last 10 datapoints:",
-        div(
-	  style="font-size:1.5rem;",
-	  span("CO2", textOutput("avg_co2", container = tags$strong)),
-	  tags$br(),
-	  span("Temp", textOutput("avgTemp", container = tags$strong))
-	)
+          div(class = "avg-val-cards",
+            div(
+                span("CO2", textOutput("avg_co2", container = tags$strong)),
+            ),
+            div(
+                span("Temp", textOutput("avgTemp", container = tags$strong))
+            )
+          )
       ),
       plotOutput("historyPlot", height = "500px"),
       DT::dataTableOutput("allData")
@@ -58,12 +81,12 @@ server <- function(input, output) {
       rename(
         Time = time, CO2 = co2, Temp = temp, Humidity =  humidity
       ) 
-
-     dbDisconnect(con)
-
-     air_data
+    
+    dbDisconnect(con)
+    
+    air_data
   }) 
-
+  
   recent_obs <- reactive({
     air_data() %>% tail(10)
   })
@@ -75,11 +98,11 @@ server <- function(input, output) {
   output$historyPlot <- renderPlot({
     plot_air_data(air_data(), "office shed")
   })
-
+  
   output$avg_co2 <- renderText({
-   round( mean(recent_obs()$CO2), 2)
+    round( mean(recent_obs()$CO2), 2)
   })
-
+  
   output$avgTemp <- renderText({round(mean(recent_obs()$Temp), 2)})
 }
 
