@@ -1,3 +1,8 @@
+import os
+os.chdir("/home/pi/office_co2_sensor/sensing")
+
+print("Running office air monitoring protocol")
+
 # This script is run on a raspberry pi zero hooked up to an
 # Adafruit SCD-41 sensor (https://www.adafruit.com/product/5190)
 # The pi is on the same local network so the air_quality.csv file
@@ -14,9 +19,15 @@ import datetime
 CO2_HIGH = 1000
 CO2_LOW = 600
 
-TEMP_HIGH = 24 # degrees C aka 75f
+# Level of CO2 concentration that indicates someone is in the shed.
+# Used for updating the temperature bounds
+CO2_OCCUPIED_THRESH = CO2_LOW 
+
+TEMP_HIGH = 20 # degrees C aka 68f
 TEMP_LOW = 16  # aka 60f
 
+TEMP_HIGH_OCCUPIED = 23 # aka 75f
+TEMP_LOW_OCCUPIED = 20  # aka 68f
 
 # ========================================================
 # Setup drivers for CO2 sensor
@@ -157,39 +168,35 @@ import asyncio
 heater_plug_ip = "10.0.0.107"
 fan_plug_ip= "10.0.0.135"
 
-def turnPlugOn(plug):
-    if (plug.is_off):
-        asyncio.run(plug.turn_on())
-        print("Plug turned on")
-    else:
-        print("Plug is already on")
-    
-def turnPlugOff(plug):
-    if (plug.is_on):
-        asyncio.run(plug.turn_off())
-        print("Plug turned off")
-    else:
-        print("Plug is already off")
-    
-    
-def setPlug(plug_ip, onOrOff):
+async def setPlugAsync(plug_name, onOrOff):
+    plug_ip = heater_plug_ip if plug_name == "heater" else fan_plug_ip
     try:
       plug = SmartPlug(plug_ip)
-      asyncio.run(plug.update())
+      await plug.update()
 
-      if onOrOff == "on":    
-          turnPlugOn(plug)
+      if onOrOff == "on":
+        if (plug.is_off):
+            await plug.turn_on()
+            print(f"------{plug_name} turned on")
+        else:
+            print(f"------{plug_name} already on")    
       else:
-          turnPlugOff(plug)
+          if (plug.is_on):
+              await plug.turn_off()
+              print(f"------{plug_name} turned off")
+          else:
+              print(f"------{plug_name} already off")    
     except:
-        print("Failed to connect to smart plug")
+        print(f"------Failed to connect to {plug_name} plug")
 
-def setHeater(onOrOff):
-    setPlug(heater_plug_ip, onOrOff)
+async def updatePlugs(heaterOnOrOff, fanOnOrOff):
+  if heaterOnOrOff != None:
+    await setPlugAsync("heater", heaterOnOrOff)
+  
+  if fanOnOrOff != None:
+    await setPlugAsync("fan", fanOnOrOff)
 
-def setFan(onOrOff):
-    setPlug(fan_plug_ip, onOrOff)
-
+  print("----Smart Plug updates complete")
 
 
 # ========================================================
@@ -243,9 +250,9 @@ while True:
             # Iterate update counter
             update_counter = (update_counter + 1) % OBS_PER_DISPLAY_UPDATE
             if (update_counter == 0):
-                print("Sending latest values to display...")
+                print("-Sending latest values to display...")
                 display_co2_values(display_vals_co2, display_vals_time)
-                print("...done")
+                print("-...done")
         
         with open("air_quality.csv", "a") as f:
             f.write(f"{now},{co2},{temp},{humidity}\n")
@@ -257,20 +264,30 @@ while True:
 
         # Control heat and airflow
         if (automation_counter == 0):
-          print("  Checking heat and fan thresholds...")
-          if temp > TEMP_HIGH:
-            print("    Temp too high, turning off heater")
-            setHeater("off")
-          elif temp < TEMP_LOW:
-            print("    Temp too low, turning on heater")
-            setHeater("on")
+          print("-Checking heat and fan thresholds...")
+         
+          is_occupied = co2 > CO2_OCCUPIED_THRESH
+          temp_low_thresh = TEMP_LOW_OCCUPIED if is_occupied else TEMP_LOW
+          temp_high_thresh = TEMP_HIGH_OCCUPIED if is_occupied else TEMP_HIGH
+          print(f"--Shed is {'occupied' if is_occupied else 'empty'} using thresholds high={temp_high_thresh} - low={temp_low_thresh}")
+
+          heaterUpdate = None;
+          fanUpdate = None;
+          if temp > temp_high_thresh:
+            print("----Temp too high, turning off heater")
+            heaterUpdate = "off"
+          elif temp < temp_low_thresh:
+            print("----Temp too low, turning on heater")
+            heaterUpdate = "on"
 
           if co2 > CO2_HIGH:
-            print("    CO2 too high, turning on fan")
-            setFan("on")
+            print("----CO2 too high, turning on fan")
+            fanUpdate = "on"
           elif co2 < CO2_LOW:
-            print("    CO2 below threshold, turning off fan")
-            setFan("off")
+            print("----CO2 below threshold, turning off fan")
+            fanUpdate = "off"
+
+          asyncio.run(updatePlugs(heaterUpdate, fanUpdate))
 
         automation_counter = (automation_counter + 1) % OBS_PER_AUTOMATION_CHECK
 
